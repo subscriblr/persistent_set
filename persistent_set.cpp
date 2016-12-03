@@ -1,5 +1,7 @@
 #include"persistent_set.h"
 
+#define DEBUG
+
 persistent_set::persistent_set() {
 	root = NULL;
 	iters = NULL;
@@ -30,6 +32,10 @@ void persistent_set::washN(node * x) {
 		((x -> child)[i] -> ptr_cnt)--;
 		washN((x -> child)[i]);
 	}
+	#ifdef DEBUG 
+		std::cout << "delete node\n";
+	#endif
+	delete x;
 }
 
 persistent_set::node * persistent_set::getN(node * x, time_t id) {
@@ -65,11 +71,19 @@ time_t persistent_set::countN(node * x, value_type key) {
 
 //inv: doesn't contain key yet
 persistent_set::node * persistent_set::insertN(node * x, value_type key) {
-	if (x == NULL) return new node(key);
+	if (x == NULL) {
+		#ifdef DEBUG 
+			std::cout << "create node\n";
+		#endif
+		return new node(key);
+	}		
 
 
 	node * ret = new (std::nothrow) node(x);
 	if (ret == NULL) return x;
+	#ifdef DEBUG 
+		std::cout << "create node\n";
+	#endif
 	
 	int go = key > (x -> key);
 	node * new_child = insertN((x -> child)[go], key);
@@ -104,12 +118,18 @@ persistent_set::node * persistent_set::eraseN(node * x, value_type key) {
 		
 		node * ret = new (std::nothrow) node(x);
 		if (ret == NULL) return x;
-
+		#ifdef DEBUG 
+			std::cout << "create node\n";
+		#endif
+		
 		(ret -> key) = newkey;
 		
 		node * new_child = eraseN((x -> child)[go], newkey);
 
 		if (new_child == (x -> child)[go]) {
+			#ifdef DEBUG 
+				std::cout << "delete node\n";
+			#endif
 			delete ret;
 			return x;
 		}
@@ -124,12 +144,18 @@ persistent_set::node * persistent_set::eraseN(node * x, value_type key) {
 	}	
 	node * ret = new (std::nothrow) node(x);
 	if (ret == NULL) return x;
-
+	#ifdef DEBUG 
+		std::cout << "create node\n";
+	#endif
+	
 
 	int go = key > (x -> key);
 	node * new_child = eraseN((x -> child)[go], key);
 
 	if (new_child == (x -> child)[go]) {
+		#ifdef DEBUG 
+			std::cout << "delete node\n";
+		#endif
 		delete ret;
 		return x;
 	}
@@ -173,6 +199,9 @@ void persistent_set::make_invalid() {
 		iterator_list * temp = (iters -> next);
 
 		((iters -> cur) -> invalid) = true;
+		#ifdef DEBUG 
+			std::cout << "delete iter\n";
+		#endif
 		delete(iters);
 		iters = temp;
 	}
@@ -193,6 +222,9 @@ bool operator!=(persistent_set::iterator a, persistent_set::iterator b) {
 persistent_set::iterator persistent_set::end() {
 	iterator_list * newtop = new (std::nothrow) iterator_list();
 	if (newtop == NULL) return iterator(nullptr);
+	#ifdef DEBUG 
+		std::cout << "create iter\n";
+	#endif
 	(newtop -> next) = iters;
 	(newtop -> cur) = std::make_shared<iter>(root, cursz, nullptr);
 	iters = newtop;
@@ -203,6 +235,9 @@ persistent_set::iterator persistent_set::end() {
 persistent_set::iterator persistent_set::begin() {
 	iterator_list * newtop = new (std::nothrow) iterator_list();
 	if (newtop == NULL) return iterator(nullptr);
+	#ifdef DEBUG 
+		std::cout << "create iter\n";
+	#endif
 	(newtop -> next) = iters;
 	(newtop -> cur) = std::make_shared<iter>(root, 0, getN(root, 0));
 	iters = newtop;
@@ -215,7 +250,10 @@ persistent_set::iterator persistent_set::find(value_type key) {
 
 	iterator_list * newtop = new (std::nothrow) iterator_list();
 	if (newtop == NULL) return iterator(nullptr);
-
+	#ifdef DEBUG 
+		std::cout << "create iter\n";
+	#endif
+	
 	(newtop -> next) = iters;
 	(newtop -> cur) = std::make_shared<iter>(root, id, x);
 	iters = newtop;
