@@ -38,9 +38,9 @@ void persistent_set::washN(node * x) {
 	delete x;
 }
 
-persistent_set::node * persistent_set::getN(node * x, time_t id) {
+persistent_set::node * persistent_set::getN(node * x, size_t id) {
 	if (x == NULL) return NULL;
-	time_t lsz = 0;
+	size_t lsz = 0;
 	if ((x -> child)[0] != NULL) lsz = (x -> child)[0] -> sz;
 
 	if (lsz > id) return getN((x -> child)[0], id);
@@ -58,12 +58,12 @@ persistent_set::node * persistent_set::findN(node * x, value_type key) {
 	return findN((x -> child)[key > (x -> key)], key); 
 }
 
-time_t persistent_set::countN(node * x, value_type key) {
+size_t persistent_set::countN(node * x, value_type key) {
 	if (x == NULL) return 0;
 	if ((x -> key) == key) return 0;
 
 	int go = key > (x -> key);
-	time_t ret = countN((x -> child)[go], key);
+	size_t ret = countN((x -> child)[go], key);
 	if (go == 1 && (x -> child)[0] != NULL) ret += (x -> child)[0] -> sz;
 	return ret;
 }
@@ -79,7 +79,7 @@ persistent_set::node * persistent_set::insertN(node * x, value_type key) {
 	}		
 
 
-	node * ret = new (std::nothrow) node(x);
+	node * ret = new (std::nothrow) node(*x);
 	if (ret == NULL) return x;
 	#ifdef DEBUG 
 		std::cerr << "create node\n";
@@ -116,7 +116,7 @@ persistent_set::node * persistent_set::eraseN(node * x, value_type key) {
 
 		int newkey = (t -> key);
 		
-		node * ret = new (std::nothrow) node(x);
+		node * ret = new (std::nothrow) node(*x);
 		if (ret == NULL) return x;
 		#ifdef DEBUG 
 			std::cerr << "create node\n";
@@ -142,7 +142,7 @@ persistent_set::node * persistent_set::eraseN(node * x, value_type key) {
 		}		
 		return ret;
 	}	
-	node * ret = new (std::nothrow) node(x);
+	node * ret = new (std::nothrow) node(*x);
 	if (ret == NULL) return x;
 	#ifdef DEBUG 
 		std::cerr << "create node\n";
@@ -177,15 +177,15 @@ persistent_set::node::node(value_type key):key(key) {
 	ptr_cnt = 0;
 }
 
-persistent_set::node::node(node * o) {
-	key = (o -> key);
-	child[0] = (o -> child)[0];
-	child[1] = (o -> child)[1];
+persistent_set::node::node(const node & o) {
+	key = o.key;
+	child[0] = o.child[0];
+	child[1] = o.child[1];
 	sz = 1;
 	ptr_cnt = 0;
 }
 
-persistent_set::iter::iter(node * root, time_t id, node * cur):root(root), curid(id),curnode(cur) {
+persistent_set::iter::iter(node * root, size_t id, node * cur):root(root), curid(id),curnode(cur) {
 	invalid = false;	
 }
 
@@ -221,7 +221,7 @@ bool operator!=(persistent_set::iterator a, persistent_set::iterator b) {
 
 persistent_set::iterator persistent_set::end() {
 	iterator_list * newtop = new (std::nothrow) iterator_list();
-	if (newtop == NULL) return iterator(nullptr);
+	assert(newtop != NULL);
 	#ifdef DEBUG 
 		std::cerr << "create iter\n";
 	#endif
@@ -234,7 +234,7 @@ persistent_set::iterator persistent_set::end() {
 
 persistent_set::iterator persistent_set::begin() {
 	iterator_list * newtop = new (std::nothrow) iterator_list();
-	if (newtop == NULL) return iterator(nullptr);
+	assert(newtop != NULL);
 	#ifdef DEBUG 
 		std::cerr << "create iter\n";
 	#endif
@@ -246,10 +246,10 @@ persistent_set::iterator persistent_set::begin() {
 
 persistent_set::iterator persistent_set::find(value_type key) {
 	node * x = findN(root, key);
-	time_t id = (x == NULL) ? cursz : countN(root, key);
+	size_t id = (x == NULL) ? cursz : countN(root, key);
 
 	iterator_list * newtop = new (std::nothrow) iterator_list();
-	if (newtop == NULL) return iterator(nullptr);
+	assert(newtop != NULL);
 	#ifdef DEBUG 
 		std::cerr << "create iter\n";
 	#endif
@@ -278,6 +278,9 @@ std::pair<persistent_set::iterator, bool> persistent_set::insert(value_type key)
 		if (root != NULL) (root -> ptr_cnt)++;
 		cursz++;
 	}
+	//could not insert
+	assert(findN(root, key) != NULL);
+
 	return std::make_pair(find(key), changed);
 }
 
@@ -298,6 +301,9 @@ void persistent_set::erase(iterator it) {
 	root = newroot;
 	if (root != NULL) (root -> ptr_cnt)++;
 	cursz--;
+
+	//could not erase
+	assert(findN(root, (it.x -> curnode) -> key) == NULL);
 }
 
 value_type const& persistent_set::iterator::operator*() {
